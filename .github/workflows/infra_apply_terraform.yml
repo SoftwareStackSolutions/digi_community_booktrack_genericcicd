@@ -1,0 +1,60 @@
+name: Reusable Terraform Deploy
+
+on:
+  workflow_call:
+    inputs:
+      terraform_path:
+        required: true
+        type: string
+      aws_region:
+        required: true
+        type: string
+      role_to_assume:
+        required: true
+        type: string
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.role_to_assume }}
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: Terraform Init
+        run: |
+          cd ${{ inputs.terraform_path }}
+          terraform init
+
+      - name: Terraform Format Check
+        run: |
+          cd ${{ inputs.terraform_path }}
+          terraform fmt -check -recursive
+
+      - name: Terraform Validate
+        run: |
+          cd ${{ inputs.terraform_path }}
+          terraform validate
+
+      - name: Terraform Plan
+        run: |
+          cd ${{ inputs.terraform_path }}
+          terraform plan
+
+      - name: Terraform Apply
+        run: |
+          cd ${{ inputs.terraform_path }}
+          terraform apply -auto-approve
